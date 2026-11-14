@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lector EPUB Integrado</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; background: #f8f9fa; color: #222; }
+    body.dark { background: #181818; color: #e0e0e0; }
+    #toolbar { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #2c3e50; color: white; }
+    button { background: #34495e; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button:active { background: #1abc9c; }
+    #viewer { flex: 1; overflow: hidden; padding: 0 10px; }
+    #status { text-align: center; padding: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button onclick="rendition.prev()">◀ Anterior</button>
+    <div>
+      <button onclick="cambiarFuente(-10)">A-</button>
+      <button onclick="cambiarFuente(10)">A+</button>
+      <button onclick="toggleTema()">🌓</button>
+    </div>
+    <button onclick="rendition.next()">Siguiente ▶</button>
+  </div>
+  <div id="status">Cargando libro...</div>
+  <div id="viewer"></div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const bookUrl = params.get("book");
+    let rendition;
+    let fontSize = 100;
+
+    if (!bookUrl) {
+      document.getElementById("status").innerText = "No se proporcionó ningún archivo EPUB.";
+    } else {
+      const book = ePub(bookUrl);
+      rendition = book.renderTo("viewer", { width: "100%", height: "100%", spread: "none" });
+      rendition.display().then(() => {
+        document.getElementById("status").style.display = "none";
+      }).catch(err => {
+        document.getElementById("status").innerText = "Error al cargar el EPUB: " + err.message;
+      });
+    }
+
+    function cambiarFuente(delta) {
+      fontSize = Math.max(70, Math.min(180, fontSize + delta));
+      if (rendition) rendition.themes.fontSize(fontSize + "%");
+    }
+
+    function toggleTema() {
+      document.body.classList.toggle("dark");
+      const esOscuro = document.body.classList.contains("dark");
+      if (rendition) {
+        rendition.themes.default({ body: { color: esOscuro ? "#e0e0e0" : "#222222", background: esOscuro ? "#181818" : "#f8f9fa" } });
+      }
+    }
+  </script>
+</body>
+</html>
