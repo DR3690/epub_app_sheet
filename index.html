@@ -30,21 +30,34 @@
   <div id="viewer"></div>
 
   <script>
+    // PEGA AQUÍ TU URL DE APPS SCRIPT TERMINADA EN /exec
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxffEJbd3Ob_NcCvI9UAn-Z8wyj3V47qXGH_NJvQENp1DuYEPPcy5PRcdfD5fq-XyptSg/exec";
+
     const params = new URLSearchParams(window.location.search);
-    const bookUrl = params.get("book");
+    const fileId = params.get("id");
     let rendition;
     let fontSize = 100;
 
-    if (!bookUrl) {
-      document.getElementById("status").innerText = "No se proporcionó ningún archivo EPUB.";
+    if (!fileId) {
+      document.getElementById("status").innerText = "No se proporcionó el ID del libro.";
     } else {
-      const book = ePub(bookUrl);
-      rendition = book.renderTo("viewer", { width: "100%", height: "100%", spread: "none" });
-      rendition.display().then(() => {
-        document.getElementById("status").style.display = "none";
-      }).catch(err => {
-        document.getElementById("status").innerText = "Error al cargar el EPUB: " + err.message;
-      });
+      fetch(`${SCRIPT_URL}?id=${encodeURIComponent(fileId)}`)
+        .then(res => res.text())
+        .then(base64 => {
+          const binary = atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          
+          const book = ePub(bytes.buffer);
+          rendition = book.renderTo("viewer", { width: "100%", height: "100%", spread: "none" });
+          return rendition.display();
+        })
+        .then(() => {
+          document.getElementById("status").style.display = "none";
+        })
+        .catch(err => {
+          document.getElementById("status").innerText = "Error al cargar el EPUB: " + err.message;
+        });
     }
 
     function cambiarFuente(delta) {
